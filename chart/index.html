@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>BTC Watcher</title>
+  <script src="lightweight-charts.standalone.production.js"></script>
+  <style>
+    body { margin: 0; background: #0e1116; color: #c9d1d9; font: 13px -apple-system, system-ui, sans-serif; }
+    #wrap { display: flex; height: 100vh; }
+    #chart { flex: 1; }
+    #panel { width: 200px; border-left: 1px solid #30363d; padding: 12px; }
+    .up { color: #3fb950; } .down { color: #f85149; } .none { color: #9aa4b2; }
+    h3 { font-size: 12px; margin: 0 0 6px; }
+    .alert { background: rgba(63,185,80,.15); border: 1px solid #3fb950; border-radius: 6px; padding: 8px; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <div id="wrap">
+    <div id="chart"></div>
+    <div id="panel">
+      <h3>Bias</h3>
+      <div>Daily: <span id="daily"></span></div>
+      <div>H4 EMA-50: <span id="h4"></span></div>
+      <div>14d mom: <span id="mom"></span></div>
+      <h3 style="margin-top:14px">Last alert</h3>
+      <div id="alert" class="none">—</div>
+      <div id="updated" style="margin-top:14px;color:#6e7681;font-size:11px"></div>
+    </div>
+  </div>
+  <script src="chart.js"></script>
+</body>
+</html>
