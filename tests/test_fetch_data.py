@@ -53,6 +53,25 @@ def test_fetch_recent_builds_df_from_api(monkeypatch):
     assert str(df["open_time"].dt.tz) == "UTC"
 
 
+def test_fetch_recent_symbol_uses_given_symbol(monkeypatch):
+    import fetch_data
+    captured = {}
+
+    class _Resp:
+        def raise_for_status(self): pass
+        def json(self):
+            return [[1700000000000, "1", "2", "0.5", "1.5", "9", 1700000899999]]
+
+    def _fake_get(url, params=None, timeout=None):
+        captured.update(params)
+        return _Resp()
+
+    monkeypatch.setattr(fetch_data.requests, "get", _fake_get)
+    df = fetch_data.fetch_recent_symbol("ETHUSDT", "4h", 1)
+    assert captured["symbol"] == "ETHUSDT" and captured["interval"] == "4h"
+    assert list(df.columns) == ["open_time", "open", "high", "low", "close", "volume", "close_time"]
+
+
 def test_cache_roundtrip_preserves_utc(tmp_path):
     from fetch_data import read_cached_csv
     rows = [

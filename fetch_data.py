@@ -84,17 +84,17 @@ def download(interval: str, force: bool = False) -> pd.DataFrame:
     return df
 
 
-def fetch_recent(interval: str, limit: int = 300) -> pd.DataFrame:
-    """Fetch the most recent `limit` klines for `interval` straight from the API.
-
-    Unlike `download`, this does not cache to disk and does not page history. It is
-    the light path used by the 5-minute watch loop. The last row may be the still-open
-    (in-progress) candle; callers that need only closed bars should drop it.
-    """
+def fetch_recent_symbol(symbol: str, interval: str, limit: int = 300) -> pd.DataFrame:
+    """Most recent `limit` Binance klines for an arbitrary symbol (no caching)."""
     resp = requests.get(
         config.BINANCE_BASE,
-        params={"symbol": config.SYMBOL, "interval": interval, "limit": limit},
+        params={"symbol": symbol, "interval": interval, "limit": limit},
         timeout=30,
     )
     resp.raise_for_status()
     return klines_to_df(resp.json())
+
+
+def fetch_recent(interval: str, limit: int = 300) -> pd.DataFrame:
+    """Most recent `limit` klines for `config.SYMBOL` (back-compat wrapper)."""
+    return fetch_recent_symbol(config.SYMBOL, interval, limit)
