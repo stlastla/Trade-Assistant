@@ -172,7 +172,10 @@ class WatcherApp(rumps.App):
             inst = get_instrument("BTCUSDT")
             events = self.tracker.advance_all(self.aois, closed, m5, inst,
                                               cfg.STALE_SWEEP_BARS, cfg.STALE_SHIFT_BARS)
-            for aoi, st, _prior in events:
+            for aoi, st, prior in events:
+                # leaving a stage clears its fired-key so a genuine re-entry later
+                # (e.g. a level that goes STALE then sweeps again) can re-alert
+                self.machine_fired.discard((aoi_key(aoi), prior))
                 self._emit_machine(aoi, st)
             for aoi in self.aois:                                  # reflect state for the chart
                 ms = self.tracker.states.get(aoi_key(aoi))
