@@ -36,3 +36,5 @@ def test_fvgs_to_aois_maps_direction_to_side():
     assert by_side["demand"].source == "h4_fvg_bull"
     assert by_side["supply"].source == "h4_fvg_bear"
     assert by_side["demand"].proximal == 105.0 and by_side["demand"].distal == 100.0
+    # bear FVG = supply: price rises in from below -> proximal = bottom, distal = top
+    assert by_side["supply"].proximal == 110.0 and by_side["supply"].distal == 115.0
