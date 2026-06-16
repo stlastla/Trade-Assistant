@@ -98,3 +98,45 @@ def factor_shift(aoi: AOI, ctx: ScoringContext, inst: Instrument) -> float:
         return 0.0
     want = "up" if aoi.side == "demand" else "down"
     return 1.0 if shift == want else -1.0
+
+
+def _next_opposing_target(aoi: AOI, ctx: ScoringContext) -> Optional[float]:
+    """Nearest opposing-side AOI in the trade's profit direction.
+    Short (supply): a demand BELOW proximal. Long (demand): a supply ABOVE proximal."""
+    want = "demand" if aoi.side == "supply" else "supply"
+    candidates = []
+    for other in ctx.all_aois:
+        if other is aoi or other.side != want:
+            continue
+        if aoi.side == "supply" and other.proximal < aoi.proximal:
+            candidates.append(other.proximal)
+        elif aoi.side == "demand" and other.proximal > aoi.proximal:
+            candidates.append(other.proximal)
+    if not candidates:
+        return None
+    return max(candidates) if aoi.side == "supply" else min(candidates)
+
+
+def factor_rr(aoi: AOI, ctx: ScoringContext, inst: Instrument) -> float:
+    """Reward when R:R to the next opposing AOI clears `min_rr`, using the HTF-wide
+    stop (beyond the distal edge + buffer). 0 when boxed-in or no target."""
+    target = _next_opposing_target(aoi, ctx)
+    if target is None:
+        return 0.0
+    entry = aoi.proximal
+    stop = aoi.distal + inst.stop_buffer if aoi.side == "supply" \
+        else aoi.distal - inst.stop_buffer
+    risk = abs(stop - entry)
+    reward = abs(entry - target)
+    if risk == 0:
+        return 0.0
+    rr = reward / risk
+    if rr < inst.min_rr:
+        return 0.0
+    return min(rr / (2.0 * inst.min_rr), 1.0)
+
+
+def factor_session(aoi: AOI, ctx: ScoringContext, inst: Instrument) -> float:
+    """Optional mild boost during London/NY. Neutral (0.0) when no session info is
+    available — Phase 1 does not pass session context, so this stays neutral."""
+    return 0.0
