@@ -26,6 +26,11 @@ class AOI:
     breakdown: dict = field(default_factory=dict)
 
 
+def aoi_key(aoi: "AOI") -> str:
+    """Stable id used to carry machine state across ticks (price rounded to 1dp)."""
+    return f"{aoi.source}:{round(float(aoi.proximal), 1)}"
+
+
 def band_lo_hi(aoi: AOI) -> tuple:
     """(low_edge, high_edge) of the band regardless of side."""
     return (min(aoi.proximal, aoi.distal), max(aoi.proximal, aoi.distal))
