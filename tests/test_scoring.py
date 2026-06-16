@@ -1,3 +1,5 @@
+from dataclasses import replace
+
 import pandas as pd
 from aoi import AOI
 from factors import ScoringContext
@@ -26,7 +28,11 @@ def test_A1_flat_bias_is_no_trade():
 
 
 def test_Aplus_requires_sweep(monkeypatch):
+    # Use a LOW A+ threshold (0.5) so the non-sweep factors (weight sum 0.65) clear it
+    # on score alone. Then sweep=0 must STILL block A+ via the hard rule — so this test
+    # fails if the `breakdown["sweep"]>0` clause is deleted (it isolates the rule).
     import scoring
+    inst = replace(BTC, label_thresholds={"A+": 0.5, "valid": 0.45, "weak": 0.0})
     aoi = AOI("D", "supply", 100.0, 112.0, "daily_swing_high")
     monkeypatch.setattr(scoring, "FACTORS", [
         ("sweep", lambda a, c, i: 0.0),
@@ -36,8 +42,20 @@ def test_Aplus_requires_sweep(monkeypatch):
         ("rr", lambda a, c, i: 1.0),
         ("session", lambda a, c, i: 1.0),
     ])
-    out = score_aoi(aoi, _ctx({"D": "DOWN"}), BTC)
-    assert out.label != "A+"
+    out = score_aoi(aoi, _ctx({"D": "DOWN"}), inst)
+    assert out.score >= inst.label_thresholds["A+"]   # score alone would qualify
+    assert out.label == "valid"                        # but no sweep -> blocked from A+
+
+
+def test_gate_pass_all_zero_factors_floors_to_weak():
+    import scoring
+    aoi = AOI("D", "supply", 100.0, 112.0, "daily_swing_high")
+    monkeypatch_factors = [(name, lambda a, c, i: 0.0) for name, _ in FACTORS]
+    import pytest
+    with pytest.MonkeyPatch().context() as m:
+        m.setattr(scoring, "FACTORS", monkeypatch_factors)
+        out = score_aoi(aoi, _ctx({"D": "DOWN"}), BTC)
+    assert out.gate == "pass" and out.score == 0.0 and out.label == "weak"
 
 
 def test_B1_beats_B2_and_A1_ordering(monkeypatch):

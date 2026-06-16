@@ -31,10 +31,11 @@ def _label(score: float, breakdown: dict, inst: Instrument) -> str:
 def score_aoi(aoi: AOI, ctx: ScoringContext, inst: Instrument) -> AOI:
     """Score a copy of the AOI: sets gate, score, breakdown, label. Returns the copy.
 
-    A copy is returned so the caller's original AOI object is not mutated, allowing
-    the same source AOI to be scored under different contexts independently.
+    A deep copy is returned so the caller's original AOI (including its dict fields)
+    is never mutated, allowing the same source AOI to be scored under different
+    contexts independently. Callers must use the returned object.
     """
-    out = copy.copy(aoi)
+    out = copy.deepcopy(aoi)
     gate = bias_gate(out, ctx.bias_map)
     out.gate = gate
     if gate == "no-trade":
