@@ -67,3 +67,16 @@ def build_aois(daily, h4, now, inst: Instrument,
     aois = [level_to_aoi(l, inst) for l in levels]
     aois += fvgs_to_aois(unfilled_fvgs(h4, "bull") + unfilled_fvgs(h4, "bear"), "H4")
     return aois
+
+
+def next_opposing_proximal(aoi: AOI, aois: List[AOI]):
+    """Nearest opposing-side AOI proximal in the profit direction (a demand below a
+    supply, a supply above a demand), or None. Shared by the R:R factor and trade_plan."""
+    want = "demand" if aoi.side == "supply" else "supply"
+    cands = [o.proximal for o in aois
+             if o is not aoi and o.side == want
+             and ((aoi.side == "supply" and o.proximal < aoi.proximal)
+                  or (aoi.side == "demand" and o.proximal > aoi.proximal))]
+    if not cands:
+        return None
+    return max(cands) if aoi.side == "supply" else min(cands)

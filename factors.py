@@ -9,7 +9,7 @@ from typing import Callable, List, Optional
 
 import pandas as pd
 
-from aoi import AOI, band_lo_hi
+from aoi import AOI, band_lo_hi, next_opposing_proximal
 from instruments import Instrument, to_units
 from liquidity import detect_sweeps
 from levels import unfilled_fvgs
@@ -104,20 +104,8 @@ def factor_shift(aoi: AOI, ctx: ScoringContext, inst: Instrument) -> float:
 
 
 def _next_opposing_target(aoi: AOI, ctx: ScoringContext) -> Optional[float]:
-    """Nearest opposing-side AOI in the trade's profit direction.
-    Short (supply): a demand BELOW proximal. Long (demand): a supply ABOVE proximal."""
-    want = "demand" if aoi.side == "supply" else "supply"
-    candidates = []
-    for other in ctx.all_aois:
-        if other is aoi or other.side != want:
-            continue
-        if aoi.side == "supply" and other.proximal < aoi.proximal:
-            candidates.append(other.proximal)
-        elif aoi.side == "demand" and other.proximal > aoi.proximal:
-            candidates.append(other.proximal)
-    if not candidates:
-        return None
-    return max(candidates) if aoi.side == "supply" else min(candidates)
+    """Nearest opposing-side AOI in the trade's profit direction (shared helper)."""
+    return next_opposing_proximal(aoi, ctx.all_aois)
 
 
 def factor_rr(aoi: AOI, ctx: ScoringContext, inst: Instrument) -> float:

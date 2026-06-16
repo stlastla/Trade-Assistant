@@ -51,6 +51,30 @@ def test_H5_clean_armed_sequence():
     assert st.plan is not None and st.plan["stop"] == 112.0 + BTC.stop_buffer
 
 
+def test_H6_demand_armed_sequence():
+    # Long mirror: demand band [88,100]; M15 sweeps the swing low (87<90, closes back above),
+    # M5 prints an up-break (close 104 > swing high 100), then the first bearish M5 candle = entry.
+    dem = AOI("H4", "demand", 100.0, 88.0, "h4_swing_low")
+    m15 = _m15([("2026-06-16T00:00Z", 104, 100, 102),
+                ("2026-06-16T00:15Z", 101, 96, 98),
+                ("2026-06-16T00:30Z", 97, 90, 92),    # swing low 90
+                ("2026-06-16T00:45Z", 100, 95, 98),
+                ("2026-06-16T01:00Z", 101, 97, 99),
+                ("2026-06-16T01:15Z", 94, 87, 93),     # bullish sweep of 90
+                ("2026-06-16T01:30Z", 96, 92, 94)])
+    m5 = _m5([("2026-06-16T01:20Z", 90, 92, 88, 91),
+              ("2026-06-16T01:25Z", 91, 94, 90, 93),
+              ("2026-06-16T01:30Z", 93, 96, 92, 95),
+              ("2026-06-16T01:35Z", 95, 100, 94, 97),  # swing high 100
+              ("2026-06-16T01:40Z", 97, 98, 92, 93),
+              ("2026-06-16T01:45Z", 93, 95, 90, 91),   # confirms swing high
+              ("2026-06-16T01:50Z", 91, 106, 90, 104), # close 104 > 100 -> up break (shift)
+              ("2026-06-16T01:55Z", 104, 105, 98, 99)])  # bearish opposing candle -> entry
+    st = advance(dem, m15, m5, [dem], BTC, stale_sweep_bars=12, stale_shift_bars=12)
+    assert st.state == "ARMED"
+    assert st.plan["stop"] == 88.0 - BTC.stop_buffer    # HTF distal - buffer (below)
+
+
 def test_H1_premature_tag_stays_tagged():
     m15 = _m15([("2026-06-16T00:00Z", 100, 96, 98),
                 ("2026-06-16T00:15Z", 104, 99, 102),
