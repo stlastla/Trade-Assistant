@@ -4,7 +4,7 @@ Only BTCUSDT is monitored live; XAUUSD/EURUSD exist for config + tests. Every
 distance comparison goes through `to_units` so a pip instrument is never compared
 against a price-unit band (the unit-bug guard from the spec).
 """
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
 @dataclass
@@ -43,6 +43,7 @@ INSTRUMENTS = {
 
 
 def get_instrument(symbol: str) -> Instrument:
+    """Return the Instrument config for `symbol`; raises KeyError if unknown."""
     return INSTRUMENTS[symbol]
 
 

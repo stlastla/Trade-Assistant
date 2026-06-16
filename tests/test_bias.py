@@ -25,6 +25,15 @@ def test_compute_bias_up_down_flat():
     assert compute_bias(_flat()) == "FLAT"
 
 
+def test_flat_when_position_and_slope_disagree():
+    # EMA still sloping up over the window, but the final bar plunges below the EMA,
+    # so position(down) != slope(up) -> FLAT (the second FLAT condition).
+    closes = [float(c) for c in range(79)] + [10.0]
+    df = pd.DataFrame({"high": [c + 1 for c in closes], "low": [c - 1 for c in closes],
+                       "close": closes})
+    assert compute_bias(df) == "FLAT"
+
+
 def test_bias_map_keys():
     m = bias_map(_rising(), _rising(), _falling())
     assert set(m) == {"W", "D", "H4"}
