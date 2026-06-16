@@ -17,7 +17,7 @@ def _aoi_to_dict(a) -> dict:
     return {"timeframe": a.timeframe, "side": a.side,
             "proximal": a.proximal, "distal": a.distal, "source": a.source,
             "gate": a.gate, "score": a.score, "label": a.label,
-            "breakdown": a.breakdown}
+            "breakdown": a.breakdown, "state": a.state, "plan": a.plan}
 
 
 def build_state(price: float, levels: List[Level], zones: List[FVG], bias: Bias,

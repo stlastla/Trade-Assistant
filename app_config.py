@@ -13,6 +13,14 @@ SWING_RIGHT = 2
 REQUIRE_HTF_ALIGNMENT = True
 COUNTER_TREND_MODE = "silent"   # "silent" | "fyi"
 
+# --- Phase 2 state machine ---
+ENTRY_TF = "5m"
+SWEEP_TF = "15m"
+MIN_ALERT_GRADE = "valid"            # "A+" | "valid" | "weak"
+ALERT_STAGES = ("SWEPT", "SHIFTED", "ARMED")
+STALE_SWEEP_BARS = 12                # M15 bars in TAGGED before STALE (~3h)
+STALE_SHIFT_BARS = 12                # M5 bars in SWEPT before STALE (~1h)
+
 # --- Persisted UI toggles ---
 SETTINGS_PATH = "app_settings.json"
 DEFAULT_SETTINGS = {"notifications_enabled": True, "alert_sound_enabled": False}

@@ -24,6 +24,8 @@ class AOI:
     label: str = "unscored"
     gate: str = ""
     breakdown: dict = field(default_factory=dict)
+    state: str = "WATCHING"
+    plan: dict = None
 
 
 def aoi_key(aoi: "AOI") -> str:
