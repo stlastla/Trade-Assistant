@@ -8,3 +8,4 @@ data/*.csv
 app_settings.json
 chart/state.json
 chart/state.json.tmp
+.worktrees/
