@@ -76,3 +76,25 @@ def factor_structure(aoi: AOI, ctx: ScoringContext, inst: Instrument) -> float:
         if _overlaps(a_lo, a_hi, f.bottom, f.top):
             return 1.0
     return 0.0
+
+
+def structure_shift_reader(aoi: AOI, ctx: ScoringContext) -> Optional[str]:
+    """Default shift feed: the last MSS/CHoCH direction on the entry timeframe.
+    Returns 'up'/'down'/None. A RelicusRoad Signal Line reader can replace this."""
+    breaks = detect_structure_breaks(ctx.etf)
+    if not breaks:
+        return None
+    return breaks[-1]["direction"]
+
+
+def factor_shift(aoi: AOI, ctx: ScoringContext, inst: Instrument) -> float:
+    """+1 if the shift confirms the trade direction, -1 if against, 0 if no feed.
+    demand/long wants 'up'; supply/short wants 'down'."""
+    reader = ctx.shift_reader
+    if reader is None:
+        return 0.0
+    shift = reader(aoi, ctx)
+    if shift is None:
+        return 0.0
+    want = "up" if aoi.side == "demand" else "down"
+    return 1.0 if shift == want else -1.0
