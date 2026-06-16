@@ -145,8 +145,9 @@ class WatcherApp(rumps.App):
         now = pd.Timestamp.now(tz="UTC")
         for ss in self.syms.values():
             self._scan_symbol(ss, now)
-        if "BTCUSDT" in self.syms:
-            self.title = f"₿ {self.syms['BTCUSDT'].last_price:,.0f}"
+        btc = self.syms.get("BTCUSDT")
+        if btc and btc.last_price:                       # keep the ₿ … placeholder until a real price
+            self.title = f"₿ {btc.last_price:,.0f}"
         self._update_status()
 
     def _scan_symbol(self, ss, now):
