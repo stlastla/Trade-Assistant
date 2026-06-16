@@ -6,6 +6,6 @@ data/*.csv
 
 .DS_Store
 app_settings.json
-chart/state.json
-chart/state.json.tmp
+chart/state*.json
+chart/state*.json.tmp
 .worktrees/

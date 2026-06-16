@@ -57,3 +57,17 @@ in order before it can become an entry:
 
 A stale sweep with no shift, or an out-of-order shift, never arms — "price at a level" is
 not a trade until the full ordered sequence fires.
+
+## Multi-instrument (Phase 3)
+Monitors **BTCUSD, XAUUSD, EURUSD** in one app. BTC uses Binance; gold/forex use Twelve Data.
+
+- **API key:** run `./venv/bin/python set_api_key.py` once to store your Twelve Data key in
+  the macOS Keychain (service `trade-assistant`, account `twelvedata`). Never stored in the repo.
+- **Forex session gate:** XAU/EUR are scanned only 08:00–22:00 UTC on weekdays
+  (`FOREX_SESSION_UTC`), keeping Twelve Data usage under the free 800-credit/day cap. BTC scans
+  24/7 on Binance.
+- **Chart:** the BTC / XAU / EUR buttons switch which symbol's marked chart you view.
+- Each symbol has its own state file (`chart/state-<symbol>.json`); alerts are symbol-tagged.
+
+`ENABLED_SYMBOLS` and `FOREX_SESSION_UTC` live in `app_config.py`; per-symbol source/symbol in
+`instruments.py`.
