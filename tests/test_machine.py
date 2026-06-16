@@ -51,6 +51,16 @@ def test_H5_clean_armed_sequence():
     assert st.plan is not None and st.plan["stop"] == 112.0 + BTC.stop_buffer
 
 
+def test_pre_tag_distal_break_is_ignored():
+    # A candle closes above the distal (118 > 112) BEFORE price ever tags the band,
+    # then comes back and tags cleanly. The stale break must NOT invalidate the setup.
+    m15 = _m15([("2026-06-16T00:00Z", 122, 115, 118),   # above the zone, pre-tag
+                ("2026-06-16T00:15Z", 110, 104, 106),   # comes down and tags [100,112]
+                ("2026-06-16T00:30Z", 108, 102, 105)])
+    st = advance(SUP, m15, _m5([]), [SUP], BTC, stale_sweep_bars=12, stale_shift_bars=12)
+    assert st.state == "TAGGED"
+
+
 def test_H6_demand_armed_sequence():
     # Long mirror: demand band [88,100]; M15 sweeps the swing low (87<90, closes back above),
     # M5 prints an up-break (close 104 > swing high 100), then the first bearish M5 candle = entry.

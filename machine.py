@@ -24,9 +24,12 @@ class MachineState:
     plan: Optional[dict] = None
 
 
-def _distal_broken(aoi: AOI, m15: pd.DataFrame) -> bool:
-    """Price closed beyond the HTF distal edge (a real break, not a wick)."""
-    closes = m15["close"].to_numpy()
+def _distal_broken(aoi: AOI, m15: pd.DataFrame, after: pd.Timestamp) -> bool:
+    """Price closed beyond the HTF distal edge (a real break, not a wick) on a bar at or
+    after `after` — i.e. once the setup has begun (post-tag), not in stale history before
+    price ever reached the zone."""
+    sub = m15[m15["open_time"] >= after]
+    closes = sub["close"].to_numpy()
     if aoi.side == "supply":
         return bool((closes > aoi.distal).any())
     return bool((closes < aoi.distal).any())
@@ -38,12 +41,12 @@ def _bars_after(frame: pd.DataFrame, t: pd.Timestamp) -> int:
 
 def advance(aoi: AOI, m15: pd.DataFrame, m5: pd.DataFrame, aois, inst,
             stale_sweep_bars: int, stale_shift_bars: int) -> MachineState:
-    if _distal_broken(aoi, m15):
-        return MachineState("INVALIDATED")
-
     tagged = tag_time(aoi, m15)
     if tagged is None:
         return MachineState("WATCHING")
+
+    if _distal_broken(aoi, m15, tagged):   # distal broken AFTER the setup began
+        return MachineState("INVALIDATED", tag_time=tagged)
 
     swept = etf_sweep(aoi, m15, tagged, tol=inst.stop_buffer)
     if swept is None:
