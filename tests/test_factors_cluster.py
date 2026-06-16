@@ -34,3 +34,12 @@ def test_C3_eur_cluster_in_pips():
               AOI("D", "demand", 1.08530, 1.08450, "pdl"),
               AOI("D", "demand", 1.08470, 1.08390, "daily_swing_low")]
     assert factor_cluster(a, _ctx(others), EUR) > 0.0
+
+
+def test_C3_eur_unit_guard_beyond_band_does_not_cluster():
+    # 10 pips apart (> EUR cluster_band of 8). With to_units this is NOT a cluster (0.0);
+    # a buggy raw-price comparison (0.0010 <= 8.0) would wrongly cluster -> this FAILS
+    # if to_units is dropped. The real unit-bug guard.
+    a = AOI("H4", "demand", 1.08500, 1.08420, "h4_swing_low")
+    others = [a, AOI("D", "demand", 1.08600, 1.08520, "pdl")]  # +10 pips
+    assert factor_cluster(a, _ctx(others), EUR) == 0.0

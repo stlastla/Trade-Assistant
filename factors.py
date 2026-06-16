@@ -4,7 +4,7 @@ Contributions are in [0, 1] except factor_shift, which may be negative (a shift
 against the trade direction is a penalty). Missing data degrades to neutral (0.0);
 factors never raise.
 """
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Callable, List, Optional
 
 import pandas as pd
@@ -68,8 +68,11 @@ def factor_structure(aoi: AOI, ctx: ScoringContext, inst: Instrument) -> float:
     """1.0 if an UNMITIGATED FVG (matching the AOI side) overlaps the AOI band.
 
     demand <- bull FVG, supply <- bear FVG. Mitigated gaps are excluded by
-    unfilled_fvgs, so they score 0."""
+    unfilled_fvgs, so they score 0. Degrades to neutral (0.0) if the frame lacks
+    the columns FVG detection needs, rather than raising."""
     frame = _aoi_frame(aoi, ctx)
+    if not {"open_time", "high", "low"}.issubset(frame.columns):
+        return 0.0
     direction = "bull" if aoi.side == "demand" else "bear"
     a_lo, a_hi = band_lo_hi(aoi)
     for f in unfilled_fvgs(frame, direction):

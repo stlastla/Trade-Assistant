@@ -36,3 +36,10 @@ def test_D3_mitigated_fvg_not_rewarded():
     df.loc[4, "low"] = 109
     aoi = AOI("H4", "demand", 115.0, 110.0, "h4_swing_low")
     assert factor_structure(aoi, _ctx(df), BTC) == 0.0
+
+
+def test_structure_degrades_to_neutral_on_missing_columns():
+    # a frame without 'open_time' must NOT raise (the module's never-raise contract)
+    frame = pd.DataFrame({"high": [110, 130], "low": [108, 115], "close": [109, 128]})
+    aoi = AOI("H4", "demand", 115.0, 110.0, "h4_swing_low")
+    assert factor_structure(aoi, _ctx(frame), BTC) == 0.0
