@@ -44,3 +44,17 @@ def factor_sweep(aoi: AOI, ctx: ScoringContext, inst: Instrument) -> float:
         if s["direction"] == want and last_idx - s["index"] <= ctx.sweep_lookback:
             return 1.0
     return 0.0
+
+
+def factor_cluster(aoi: AOI, ctx: ScoringContext, inst: Instrument) -> float:
+    """Reward AOIs whose proximal sits within `cluster_band` (in instrument units)
+    of other AOIs' proximals. 0 if isolated; ramps with neighbour count."""
+    neighbours = 0
+    for other in ctx.all_aois:
+        if other is aoi:
+            continue
+        if to_units(abs(other.proximal - aoi.proximal), inst) <= inst.cluster_band:
+            neighbours += 1
+    if neighbours == 0:
+        return 0.0
+    return min(neighbours / 2.0, 1.0)
