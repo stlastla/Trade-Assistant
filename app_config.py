@@ -49,5 +49,10 @@ def save_settings(settings: dict, path: str = SETTINGS_PATH) -> None:
 
 
 # --- Phase 3 multi-instrument ---
+# Twelve Data free tier: 800 credits/day, 8/min (1 credit per candle request). The two
+# forex symbols cost ~4 credits/scan-tick (M15+M5 each), session-gated below to ~670/day.
+# Keep forex symbols at 2 and the window ~14h; adding a 3rd Twelve Data symbol or widening
+# the window can breach the daily cap, and a manual "Re-mark" during a scan minute can
+# momentarily exceed the 8/min burst (harmless — the symbol just retries next tick).
 ENABLED_SYMBOLS = ("BTCUSDT", "XAUUSD", "EURUSD")
 FOREX_SESSION_UTC = (8, 22)          # scan forex only within [start, end) UTC, weekdays
