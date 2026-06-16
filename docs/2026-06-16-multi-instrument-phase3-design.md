@@ -17,11 +17,12 @@ Builds on: Phase 1 (`docs/2026-06-16-confluence-scoring-phase1-design.md`) and P
 ## Confirmed decisions (from brainstorming)
 
 - **Data source:** Twelve Data (free tier, 800 credits/day, 8/min; 1 credit per candle
-  request). API key via env var `TWELVEDATA_API_KEY`. BTC stays on Binance (no Twelve Data
-  cost). Intervals map `1w/1d/4h/15m/5m → 1week/1day/4h/15min/5min`; symbols `XAUUSD→XAU/USD`,
+  request). **API key stored in the macOS login Keychain** (via the `keyring` library) —
+  never committed, never plaintext on disk. BTC stays on Binance (no Twelve Data cost).
+  Intervals map `1w/1d/4h/15m/5m → 1week/1day/4h/15min/5min`; symbols `XAUUSD→XAU/USD`,
   `EURUSD→EUR/USD`.
 - **Forex cadence:** 5-min, **session-gated** — scan XAU/EUR only inside `FOREX_SESSION_UTC`
-  (default 07:00–21:00 UTC) and **skip weekends**; no Twelve Data calls outside the window.
+  (08:00–22:00 UTC) and **skip weekends**; no Twelve Data calls outside the window.
   BTC scans 5-min 24/7. This keeps daily credit use well under 800.
 - **Architecture:** one process, looping enabled symbols; per-symbol state files; chart gets
   in-page **BTC / XAU / EUR buttons**.
@@ -48,7 +49,9 @@ def download_for(inst, our_interval) -> DataFrame
 - **`BinanceSource`** — wraps the existing `fetch_data` logic (klines, `klines_to_df`),
   refactored behind the interface. Identity interval map (`1w/1d/4h/15m/5m`).
 - **`TwelveDataSource`** — `GET https://api.twelvedata.com/time_series?symbol=&interval=&
-  outputsize=&order=ASC&apikey=`. Maps intervals, reads `TWELVEDATA_API_KEY`, and normalizes
+  outputsize=&order=ASC&apikey=`. Maps intervals, reads the key from the **macOS Keychain**
+  (`keyring.get_password("trade-assistant", "twelvedata")`, falling back to a
+  `TWELVEDATA_API_KEY` env var for headless/CI runs), and normalizes
   the `{"values":[{datetime,open,high,low,close,volume}], "status":...}` JSON into the **same
   OHLCV DataFrame shape** the engine expects: tz-aware UTC `open_time`, float OHLC(V), and a
   **synthesized `close_time`** = `open_time + interval_duration` (so `prior_day_levels`'
@@ -93,10 +96,20 @@ already serves the whole `chart/` dir, so the per-symbol files are reachable.
 
 ## Config (`app_config.py`)
 - `ENABLED_SYMBOLS = ("BTCUSDT", "XAUUSD", "EURUSD")`.
-- `FOREX_SESSION_UTC = (7, 21)`.
-- Twelve Data key read from env `TWELVEDATA_API_KEY` (in `datasource.py`).
+- `FOREX_SESSION_UTC = (8, 22)`.
 - Per-symbol `source`/`provider_symbol` live in `instruments.py`; `scan_interval` stays the
   global 5-min tick (forex just gated by session).
+
+## API key — secure storage (macOS Keychain)
+- The Twelve Data key is stored in the **macOS login Keychain** under service
+  `trade-assistant`, account `twelvedata`, via the `keyring` Python library (add `keyring` to
+  `requirements.txt`). It is never written to the repo, a config file, or logs.
+- **One-time setup:** a tiny helper `set_api_key.py` (or a documented `keyring` CLI call)
+  prompts once and stores the key in the Keychain. `datasource.py` reads it at runtime with
+  `keyring.get_password("trade-assistant", "twelvedata")`.
+- **Fallback:** if the Keychain has no entry, fall back to the `TWELVEDATA_API_KEY` env var
+  (for headless/CI). If neither is present, `TwelveDataSource` raises a clear error telling
+  the user to run the setup helper.
 
 ## Rate-budget sanity
 Forex, session-gated ~14h/weekday: 2 symbols × 2 credits/tick × 12 ticks/h × 14h ≈ **672
@@ -105,7 +118,9 @@ credits/day** + morning passes (~6) — under the 800 free cap, with BTC entirel
 ## Testing
 - **`TwelveDataSource`**: mock the HTTP JSON → assert the normalized frame (columns, UTC
   `open_time`, float OHLC, synthesized `close_time`), the interval map, the symbol passthrough,
-  and `order=ASC`. Error/`status!="ok"` raises.
+  and `order=ASC`. Error/`status!="ok"` raises. **Key resolution**: Keychain hit used first;
+  env-var fallback when Keychain empty; clear error when neither is set (monkeypatch
+  `keyring.get_password` and the env var).
 - **`BinanceSource`**: thin wrapper — assert it still returns the existing-shape frame (reuse
   the current `fetch_data` monkeypatch test pattern).
 - **dispatch**: `fetch_recent_for(inst, …)` routes to the right source by `inst.source`.
