@@ -47,12 +47,14 @@ async function refresh() {
   const LABEL_COLOR = { 'A+': '#3fb950', 'valid': '#58a6ff', 'weak': '#6e7681', 'no-trade': '#4a525c' };
   window._aoiLines = (s.aois || []).map(a => {
     const isNoTrade = a.label === 'no-trade';
+    const armed = a.state === 'ARMED';
+    const st = (a.state && a.state !== 'WATCHING') ? ' · ' + a.state : '';
     return candles.createPriceLine({
       price: a.proximal,
       color: LABEL_COLOR[a.label] || '#6e7681',
-      lineWidth: a.label === 'A+' ? 2 : 1,
+      lineWidth: armed ? 3 : (a.label === 'A+' ? 2 : 1),
       lineStyle: isNoTrade ? LightweightCharts.LineStyle.Dotted : LightweightCharts.LineStyle.Solid,
-      title: `${a.label} ${a.source}`,
+      title: `${a.label} ${a.source}${st}`,
     });
   });
 
