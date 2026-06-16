@@ -45,6 +45,21 @@ def test_status_error_raises(monkeypatch):
         src.fetch_recent("XAU/USD", "15m", 2)
 
 
+def test_empty_values_returns_empty_typed_frame(monkeypatch):
+    src, _ = _src(monkeypatch, {"status": "ok", "values": []})
+    df = src.fetch_recent("XAU/USD", "15m", 2)
+    assert list(df.columns) == ["open_time", "open", "high", "low", "close", "volume", "close_time"]
+    assert len(df) == 0
+    assert str(df["open_time"].dt.tz) == "UTC"
+
+
+def test_missing_status_raises(monkeypatch):
+    # no 'status' key at all -> data.get("status") is None != "ok" -> raise (fail closed)
+    src, _ = _src(monkeypatch, {"values": SAMPLE["values"]})
+    with pytest.raises(RuntimeError):
+        src.fetch_recent("XAU/USD", "15m", 2)
+
+
 def test_api_key_keychain_then_env_then_error(monkeypatch):
     src = datasource.TwelveDataSource()
     monkeypatch.setattr(datasource, "_keyring_get", lambda: "FROM_KC")
