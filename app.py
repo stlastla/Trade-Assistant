@@ -13,9 +13,18 @@ from zoneinfo import ZoneInfo
 import app_config as cfg
 import engine
 import state
+from aoi import aoi_key
 from bias import bias_map
 from fetch_data import fetch_recent, download
+from instruments import get_instrument
+from tracker import Tracker
 from watcher import scan
+
+_GRADE_RANK = {"weak": 1, "valid": 2, "A+": 3}
+
+
+def _grade_ok(label: str, minimum: str) -> bool:
+    return _GRADE_RANK.get(label, 0) >= _GRADE_RANK.get(minimum, 99)
 
 CHART_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "chart")
 STATE_FILE = os.path.join(CHART_DIR, "state.json")
@@ -51,6 +60,8 @@ class WatcherApp(rumps.App):
         self.settings = cfg.load_settings()
         self.levels, self.zones, self.bias = [], [], None
         self.aois = []
+        self.tracker = Tracker()
+        self.machine_fired = set()   # (aoi_key, stage) already notified this session
         self.bias_tf = {}   # per-TF confluence bias {W,D,H4} shown on the chart panel
         self.fired = set()
         self.last_alert = {}
@@ -104,6 +115,8 @@ class WatcherApp(rumps.App):
             self.levels, self.zones, self.bias = engine.run_morning_pass(daily, h4, now)
             self.aois = engine.score_pass(weekly, daily, h4, etf, now, symbol="BTCUSDT")
             self.bias_tf = bias_map(weekly, daily, h4)
+            self.tracker.reset()
+            self.machine_fired = set()
             self.fired = set()
             self._write_state()
             self._update_status(price=None)  # price unknown here; keep ₿ … placeholder
@@ -154,6 +167,17 @@ class WatcherApp(rumps.App):
             for t in triggers:
                 self._emit(t, price)
             self.title = f"₿ {price:,.0f}"
+            # Phase 2: advance the per-AOI trigger state machine on M15 + M5
+            m5 = fetch_recent(cfg.ENTRY_TF, limit=300).iloc[:-1]   # drop in-progress M5
+            inst = get_instrument("BTCUSDT")
+            events = self.tracker.advance_all(self.aois, closed, m5, inst,
+                                              cfg.STALE_SWEEP_BARS, cfg.STALE_SHIFT_BARS)
+            for aoi, st, _prior in events:
+                self._emit_machine(aoi, st)
+            for aoi in self.aois:                                  # reflect state for the chart
+                ms = self.tracker.states.get(aoi_key(aoi))
+                if ms is not None:
+                    aoi.state, aoi.plan = ms.state, ms.plan
             self._write_state(price=price, candles=_df_to_candles(closed.tail(200)))
             next_scan = (pd.Timestamp.now(tz=ZoneInfo(cfg.MORNING_TZ))
                          + pd.Timedelta(minutes=cfg.SCAN_INTERVAL_MIN)).strftime("%H:%M")
@@ -182,6 +206,26 @@ class WatcherApp(rumps.App):
         body = (f"Swept {lvl.source.upper()} {lvl.price:,.0f}, reclaimed. "
                 f"Daily {b.daily_dir} H4 {b.h4_dir} mom {b.mom14_dir}.")
         self.last_alert = {"text": f"{lvl.source} sweep", "time": pd.Timestamp.now().strftime("%H:%M")}
+        if self.settings["notifications_enabled"]:
+            rumps.notification(title, "", body, sound=self.settings["alert_sound_enabled"])
+
+    def _emit_machine(self, aoi, st):
+        if st.state not in cfg.ALERT_STAGES:
+            return
+        if not _grade_ok(aoi.label, cfg.MIN_ALERT_GRADE):
+            return
+        key = (aoi_key(aoi), st.state)
+        if key in self.machine_fired:
+            return
+        self.machine_fired.add(key)
+        side = "short" if aoi.side == "supply" else "long"
+        title = f"⚡ {st.state} — {aoi.label} {side} @ {aoi.source} {aoi.proximal:,.0f}"
+        if st.state == "ARMED" and st.plan:
+            p = st.plan
+            tgt = f"{p['target']:,.0f}" if p["target"] is not None else "—"
+            body = f"entry {p['entry']:,.0f} · stop {p['stop']:,.0f} · target {tgt} · {p['rr']:.1f}R"
+        else:
+            body = "entry forming"
         if self.settings["notifications_enabled"]:
             rumps.notification(title, "", body, sound=self.settings["alert_sound_enabled"])
 
