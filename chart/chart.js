@@ -1,4 +1,6 @@
-// Reads state.json (candles + levels + zones + bias) and renders the marked chart.
+// Reads per-symbol state-<SYMBOL>.json (candles + levels + zones + bias) and renders the marked chart.
+let SYMBOL = 'BTCUSDT';
+function setSymbol(s) { SYMBOL = s; refresh(); }
 const chart = LightweightCharts.createChart(document.getElementById('chart'), {
   layout: { background: { color: '#0e1116' }, textColor: '#c9d1d9' },
   grid: { vertLines: { color: '#161b22' }, horzLines: { color: '#161b22' } },
@@ -24,7 +26,7 @@ function setBias(b) {
 
 async function refresh() {
   let s;
-  try { s = await (await fetch('state.json?t=' + Date.now())).json(); }
+  try { s = await (await fetch(`state-${SYMBOL}.json?t=` + Date.now())).json(); }
   catch (e) { return; }
 
   if (s.candles) {
