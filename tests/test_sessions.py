@@ -19,3 +19,17 @@ def test_weekend_false_even_in_window():
     sun = pd.Timestamp("2026-06-21 10:00", tz="UTC")  # Sunday
     assert in_forex_session(sat, (8, 22)) is False
     assert in_forex_session(sun, (8, 22)) is False
+
+
+def test_half_open_boundaries():
+    start_edge = pd.Timestamp("2026-06-16 08:00", tz="UTC")  # inclusive lower
+    end_edge = pd.Timestamp("2026-06-16 22:00", tz="UTC")    # exclusive upper
+    assert in_forex_session(start_edge, (8, 22)) is True
+    assert in_forex_session(end_edge, (8, 22)) is False
+
+
+def test_naive_timestamp_raises():
+    import pytest
+    naive = pd.Timestamp("2026-06-16 10:00")  # no tz
+    with pytest.raises(ValueError):
+        in_forex_session(naive, (8, 22))
