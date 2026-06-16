@@ -12,11 +12,13 @@ const candles = chart.addCandlestickSeries({
 const COLORS = { high: '#f85149', low: '#3fb950', pdh: '#f0883e', pdl: '#f0883e' };
 
 function setBias(b) {
-  for (const [id, key] of [['daily', 'daily_dir'], ['h4', 'h4_dir'], ['mom', 'mom14_dir']]) {
+  // b is the per-TF confluence bias map {W,D,H4} with values UP/DOWN/FLAT.
+  const cls = { UP: 'up', DOWN: 'down', FLAT: 'none' };
+  for (const [id, key] of [['biasW', 'W'], ['biasD', 'D'], ['biasH4', 'H4']]) {
     const el = document.getElementById(id);
-    const v = b ? b[key] : 'none';
-    el.textContent = v;
-    el.className = v;
+    const v = (b && b[key]) ? b[key] : null;
+    el.textContent = v ? v.toLowerCase() : '—';
+    el.className = v ? (cls[v] || 'none') : 'none';
   }
 }
 
@@ -37,7 +39,7 @@ async function refresh() {
     title: lv.source,
   }));
 
-  setBias(s.bias);
+  setBias(s.bias_tf);
 
   // AOI bands colored by confluence label. no-trade AOIs are shown faint+dotted
   // (still being tracked, just not actionable) rather than hidden.

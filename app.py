@@ -13,6 +13,7 @@ from zoneinfo import ZoneInfo
 import app_config as cfg
 import engine
 import state
+from bias import bias_map
 from fetch_data import fetch_recent, download
 from watcher import scan
 
@@ -50,6 +51,7 @@ class WatcherApp(rumps.App):
         self.settings = cfg.load_settings()
         self.levels, self.zones, self.bias = [], [], None
         self.aois = []
+        self.bias_tf = {}   # per-TF confluence bias {W,D,H4} shown on the chart panel
         self.fired = set()
         self.last_alert = {}
         self._morning_done_for = None
@@ -101,6 +103,7 @@ class WatcherApp(rumps.App):
             etf = fetch_recent("15m", limit=300)
             self.levels, self.zones, self.bias = engine.run_morning_pass(daily, h4, now)
             self.aois = engine.score_pass(weekly, daily, h4, etf, now, symbol="BTCUSDT")
+            self.bias_tf = bias_map(weekly, daily, h4)
             self.fired = set()
             self._write_state()
             self._update_status(price=None)  # price unknown here; keep ₿ … placeholder
@@ -191,6 +194,7 @@ class WatcherApp(rumps.App):
             fired=list(self.fired), last_alert=self.last_alert,
             updated_at=pd.Timestamp.now(tz="UTC").isoformat(),
             aois=self.aois,
+            bias_tf=self.bias_tf,
         )
         if candles is not None:
             payload["candles"] = candles

@@ -34,6 +34,17 @@ def test_flat_when_position_and_slope_disagree():
     assert compute_bias(df) == "FLAT"
 
 
+def test_falling_ema_not_vetoed_by_stale_up_break():
+    # Price ramps UP (creating an up structure break), then falls hard so the EMA
+    # slopes down and price ends well below it. Must read DOWN, not FLAT — the old
+    # structure-contradiction veto would have wrongly returned FLAT here.
+    closes = [float(c) for c in range(40)] + [float(c) for c in range(40, -40, -1)]
+    df = pd.DataFrame({"high": [c + 1 for c in closes],
+                       "low": [c - 1 for c in closes],
+                       "close": closes})
+    assert compute_bias(df) == "DOWN"
+
+
 def test_bias_map_keys():
     m = bias_map(_rising(), _rising(), _falling())
     assert set(m) == {"W", "D", "H4"}

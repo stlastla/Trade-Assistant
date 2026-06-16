@@ -1,18 +1,20 @@
-"""Per-timeframe bias: UP / DOWN / FLAT, from EMA-50 position+slope and structure.
+"""Per-timeframe bias: UP / DOWN / FLAT, from EMA-50 slope and price position.
 
-FLAT when the EMA slope is within a small fractional threshold, or when EMA
-position and slope disagree, or when the last structure break contradicts the
-slope. This replaces the flat single-`Bias` for the scoring path; the existing
-watcher keeps its own bias until Phase 2.
+FLAT when the EMA slope is within a small fractional threshold, or when price
+position relative to the EMA disagrees with the slope. (An earlier version also
+vetoed to FLAT on a contradicting structure break, but a *stale* break would
+override an obvious EMA trend — e.g. price 6% below a falling EMA still reading
+FLAT because of one old up-break — so the structure veto was dropped.) This
+replaces the flat single-`Bias` for the scoring path; the existing watcher keeps
+its own bias until Phase 2.
 """
 import pandas as pd
 
 from levels import ema
-from structure import detect_structure_breaks
 
 
 def compute_bias(df: pd.DataFrame, ema_period: int = 50,
-                 flat_slope_pct: float = 0.0008, left: int = 2, right: int = 2) -> str:
+                 flat_slope_pct: float = 0.0003) -> str:
     close = df["close"]
     e = ema(close, ema_period)
     ema_last = float(e.iloc[-1])
@@ -25,9 +27,6 @@ def compute_bias(df: pd.DataFrame, ema_period: int = 50,
     slope_dir = "up" if slope > 0 else "down"
     pos_dir = "up" if float(close.iloc[-1]) >= ema_last else "down"
     if pos_dir != slope_dir:
-        return "FLAT"
-    breaks = detect_structure_breaks(df, left, right)
-    if breaks and breaks[-1]["direction"] != slope_dir:
         return "FLAT"
     return "UP" if slope_dir == "up" else "DOWN"
 

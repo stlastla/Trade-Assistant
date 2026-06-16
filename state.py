@@ -21,12 +21,14 @@ def _aoi_to_dict(a) -> dict:
 
 
 def build_state(price: float, levels: List[Level], zones: List[FVG], bias: Bias,
-                fired: list, last_alert: dict, updated_at: str, aois=None) -> dict:
+                fired: list, last_alert: dict, updated_at: str, aois=None,
+                bias_tf=None) -> dict:
     return {
         "price": price,
         "levels": [asdict(l) for l in levels],
         "zones": [_zone_to_dict(z) for z in zones],
         "bias": asdict(bias) if bias is not None else None,
+        "bias_tf": bias_tf or {},   # per-TF confluence bias {W,D,H4} for the chart panel
         "fired": list(fired),
         "last_alert": last_alert,
         "updated_at": updated_at,

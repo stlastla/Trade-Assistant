@@ -20,3 +20,12 @@ def test_build_state_aois_defaults_empty():
         price=1.0, levels=[], zones=[], bias=None,
         fired=[], last_alert={}, updated_at="x")
     assert payload["aois"] == []
+    assert payload["bias_tf"] == {}
+
+
+def test_build_state_includes_bias_tf():
+    payload = state.build_state(
+        price=1.0, levels=[], zones=[], bias=None,
+        fired=[], last_alert={}, updated_at="x",
+        bias_tf={"W": "DOWN", "D": "DOWN", "H4": "UP"})
+    assert payload["bias_tf"]["D"] == "DOWN" and payload["bias_tf"]["H4"] == "UP"
