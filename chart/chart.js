@@ -64,6 +64,9 @@ async function refresh() {
   if (s.last_alert && s.last_alert.text) {
     a.textContent = s.last_alert.text + (s.last_alert.time ? '  (' + s.last_alert.time + ')' : '');
     a.className = 'alert';
+  } else {
+    a.textContent = '—';            // reset so a switched-to symbol doesn't show the prior one's alert
+    a.className = 'none';
   }
   document.getElementById('updated').textContent = 'updated ' + (s.updated_at || '');
 }
