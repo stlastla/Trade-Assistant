@@ -40,3 +40,20 @@ opposing level, and session — into a label: `A+` / `valid` / `weak` / `no-trad
 
 Per-instrument config (BTC/XAU/EUR, price vs pips) lives in `instruments.py`.
 Only BTCUSDT is monitored live.
+
+## Trigger state machine + entry alerts (Phase 2)
+Each gate-passing AOI runs a per-level state machine that enforces **tag → sweep → shift**
+in order before it can become an entry:
+
+`WATCHING → TAGGED → SWEPT → SHIFTED → ARMED` (+ `INVALIDATED` / `STALE`).
+
+- **Tag:** price enters the AOI band. **Sweep:** M15 runs the level's liquidity.
+  **Shift:** M5 prints an MSS/CHoCH in the trade direction. **Armed:** first opposing
+  candle — fires an entry alert with entry / stop (HTF distal edge) / target / R:R.
+- Notifications fire on **SWEPT / SHIFTED / ARMED** (config `ALERT_STAGES`) for AOIs graded
+  ≥ `MIN_ALERT_GRADE` (default `valid`); `weak` runs silently on the chart. Each alert is
+  grade-stamped. The chart shows each AOI's live state; ARMED lines are bold.
+- Timeouts: `STALE_SWEEP_BARS` (M15) and `STALE_SHIFT_BARS` (M5). All in `app_config.py`.
+
+A stale sweep with no shift, or an out-of-order shift, never arms — "price at a level" is
+not a trade until the full ordered sequence fires.
