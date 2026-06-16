@@ -18,6 +18,8 @@ class Instrument:
     stop_buffer: float  # extra distance beyond the distal edge, in PRICE
     factor_weights: dict
     label_thresholds: dict
+    source: str = "binance"          # "binance" | "twelvedata"
+    provider_symbol: str = ""         # symbol string for that source's API
 
 
 _DEFAULT_WEIGHTS = {
@@ -30,15 +32,18 @@ INSTRUMENTS = {
     "BTCUSDT": Instrument("BTCUSDT", "price", 0.0, aoi_band=120.0,
                           cluster_band=150.0, min_rr=2.0, stop_buffer=60.0,
                           factor_weights=dict(_DEFAULT_WEIGHTS),
-                          label_thresholds=dict(_DEFAULT_THRESHOLDS)),
+                          label_thresholds=dict(_DEFAULT_THRESHOLDS),
+                          source="binance", provider_symbol="BTCUSDT"),
     "XAUUSD": Instrument("XAUUSD", "price", 0.0, aoi_band=3.0,
                          cluster_band=4.0, min_rr=2.0, stop_buffer=1.5,
                          factor_weights=dict(_DEFAULT_WEIGHTS),
-                         label_thresholds=dict(_DEFAULT_THRESHOLDS)),
+                         label_thresholds=dict(_DEFAULT_THRESHOLDS),
+                         source="twelvedata", provider_symbol="XAU/USD"),
     "EURUSD": Instrument("EURUSD", "pips", 0.0001, aoi_band=0.0008,
                          cluster_band=8.0, min_rr=2.0, stop_buffer=0.0004,
                          factor_weights=dict(_DEFAULT_WEIGHTS),
-                         label_thresholds=dict(_DEFAULT_THRESHOLDS)),
+                         label_thresholds=dict(_DEFAULT_THRESHOLDS),
+                         source="twelvedata", provider_symbol="EUR/USD"),
 }
 
 
