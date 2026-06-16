@@ -38,6 +38,20 @@ async function refresh() {
   }));
 
   setBias(s.bias);
+
+  // AOI bands colored by confluence label
+  (window._aoiLines || []).forEach(l => candles.removePriceLine(l));
+  const LABEL_COLOR = { 'A+': '#3fb950', 'valid': '#58a6ff', 'weak': '#6e7681', 'no-trade': '#30363d' };
+  window._aoiLines = (s.aois || [])
+    .filter(a => a.label !== 'no-trade')
+    .map(a => candles.createPriceLine({
+      price: a.proximal,
+      color: LABEL_COLOR[a.label] || '#6e7681',
+      lineWidth: a.label === 'A+' ? 2 : 1,
+      lineStyle: LightweightCharts.LineStyle.Solid,
+      title: `${a.label} ${a.source}`,
+    }));
+
   const a = document.getElementById('alert');
   if (s.last_alert && s.last_alert.text) {
     a.textContent = s.last_alert.text + (s.last_alert.time ? '  (' + s.last_alert.time + ')' : '');

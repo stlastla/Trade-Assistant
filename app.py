@@ -49,6 +49,7 @@ class WatcherApp(rumps.App):
         super().__init__("₿ …", quit_button="Quit")
         self.settings = cfg.load_settings()
         self.levels, self.zones, self.bias = [], [], None
+        self.aois = []
         self.fired = set()
         self.last_alert = {}
         self._morning_done_for = None
@@ -95,8 +96,11 @@ class WatcherApp(rumps.App):
         try:
             now = pd.Timestamp.now(tz="UTC")
             daily = download("1d", force=True)
+            weekly = fetch_recent("1w", limit=300)
             h4 = fetch_recent("4h", limit=500)
+            etf = fetch_recent("15m", limit=300)
             self.levels, self.zones, self.bias = engine.run_morning_pass(daily, h4, now)
+            self.aois = engine.score_pass(weekly, daily, h4, etf, now, symbol="BTCUSDT")
             self.fired = set()
             self._write_state()
             self._update_status(price=None)  # price unknown here; keep ₿ … placeholder
@@ -186,6 +190,7 @@ class WatcherApp(rumps.App):
             levels=self.levels, zones=self.zones, bias=self.bias,
             fired=list(self.fired), last_alert=self.last_alert,
             updated_at=pd.Timestamp.now(tz="UTC").isoformat(),
+            aois=self.aois,
         )
         if candles is not None:
             payload["candles"] = candles
