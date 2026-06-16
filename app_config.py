@@ -46,3 +46,8 @@ def save_settings(settings: dict, path: str = SETTINGS_PATH) -> None:
     """Persist the UI toggles to `path` as JSON."""
     with open(path, "w") as f:
         json.dump(settings, f, indent=2)
+
+
+# --- Phase 3 multi-instrument ---
+ENABLED_SYMBOLS = ("BTCUSDT", "XAUUSD", "EURUSD")
+FOREX_SESSION_UTC = (8, 22)          # scan forex only within [start, end) UTC, weekdays
