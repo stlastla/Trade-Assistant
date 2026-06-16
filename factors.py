@@ -58,3 +58,21 @@ def factor_cluster(aoi: AOI, ctx: ScoringContext, inst: Instrument) -> float:
     if neighbours == 0:
         return 0.0
     return min(neighbours / 2.0, 1.0)
+
+
+def _overlaps(a_lo, a_hi, b_lo, b_hi) -> bool:
+    return a_hi >= b_lo and a_lo <= b_hi
+
+
+def factor_structure(aoi: AOI, ctx: ScoringContext, inst: Instrument) -> float:
+    """1.0 if an UNMITIGATED FVG (matching the AOI side) overlaps the AOI band.
+
+    demand <- bull FVG, supply <- bear FVG. Mitigated gaps are excluded by
+    unfilled_fvgs, so they score 0."""
+    frame = _aoi_frame(aoi, ctx)
+    direction = "bull" if aoi.side == "demand" else "bear"
+    a_lo, a_hi = band_lo_hi(aoi)
+    for f in unfilled_fvgs(frame, direction):
+        if _overlaps(a_lo, a_hi, f.bottom, f.top):
+            return 1.0
+    return 0.0
