@@ -13,16 +13,24 @@ def _zone_to_dict(z: FVG) -> dict:
             "time": str(z.time)}
 
 
+def _aoi_to_dict(a) -> dict:
+    return {"timeframe": a.timeframe, "side": a.side,
+            "proximal": a.proximal, "distal": a.distal, "source": a.source,
+            "gate": a.gate, "score": a.score, "label": a.label,
+            "breakdown": a.breakdown}
+
+
 def build_state(price: float, levels: List[Level], zones: List[FVG], bias: Bias,
-                fired: list, last_alert: dict, updated_at: str) -> dict:
+                fired: list, last_alert: dict, updated_at: str, aois=None) -> dict:
     return {
         "price": price,
         "levels": [asdict(l) for l in levels],
         "zones": [_zone_to_dict(z) for z in zones],
-        "bias": asdict(bias),
+        "bias": asdict(bias) if bias is not None else None,
         "fired": list(fired),
         "last_alert": last_alert,
         "updated_at": updated_at,
+        "aois": [_aoi_to_dict(a) for a in (aois or [])],
     }
 
 
