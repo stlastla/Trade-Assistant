@@ -39,18 +39,20 @@ async function refresh() {
 
   setBias(s.bias);
 
-  // AOI bands colored by confluence label
+  // AOI bands colored by confluence label. no-trade AOIs are shown faint+dotted
+  // (still being tracked, just not actionable) rather than hidden.
   (window._aoiLines || []).forEach(l => candles.removePriceLine(l));
-  const LABEL_COLOR = { 'A+': '#3fb950', 'valid': '#58a6ff', 'weak': '#6e7681', 'no-trade': '#30363d' };
-  window._aoiLines = (s.aois || [])
-    .filter(a => a.label !== 'no-trade')
-    .map(a => candles.createPriceLine({
+  const LABEL_COLOR = { 'A+': '#3fb950', 'valid': '#58a6ff', 'weak': '#6e7681', 'no-trade': '#4a525c' };
+  window._aoiLines = (s.aois || []).map(a => {
+    const isNoTrade = a.label === 'no-trade';
+    return candles.createPriceLine({
       price: a.proximal,
       color: LABEL_COLOR[a.label] || '#6e7681',
       lineWidth: a.label === 'A+' ? 2 : 1,
-      lineStyle: LightweightCharts.LineStyle.Solid,
+      lineStyle: isNoTrade ? LightweightCharts.LineStyle.Dotted : LightweightCharts.LineStyle.Solid,
       title: `${a.label} ${a.source}`,
-    }));
+    });
+  });
 
   const a = document.getElementById('alert');
   if (s.last_alert && s.last_alert.text) {
